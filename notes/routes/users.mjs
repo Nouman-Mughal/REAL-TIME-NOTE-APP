@@ -1,3 +1,4 @@
+import fs from 'fs-extra';
 import path from 'path';
 import util from 'util';
 import {keys} from '../config/keys.mjs'
@@ -91,32 +92,43 @@ passport.deserializeUser(function(user, done) {
   done(null, user);
 });
 
-export var googleLogin;
+// const Googlecallback = process.env.GOOGLE_CALLBACK_HOST
+//     ? process.env.GOOGLE_CALLBACK_HOST
+//     : "http://localhost:3000";
+export var googleLogin = false;
+let consumer_key;
+let consumer_secret;
+if (typeof keys.GOOGLE_CONSUMER_KEY !== 'undefined'
+  && keys.GOOGLE_CONSUMER_KEY !== ''
+  && typeof keys.GOOGLE_CONSUMER_SECRET !== 'undefined'
+  && keys.GOOGLE_CONSUMER_SECRET !== '') {
+  consumer_key = keys.GOOGLE_CONSUMER_KEY;
+  consumer_secret = keys.GOOGLE_CONSUMER_SECRET;
+  googleLogin = true;
 
-if (typeof keys.GOOGLE_CONSUMER_KEY !== 'undefined'//just performing validation
-
- && keys.GOOGLE_CONSUMER_KEY !== ''
- && typeof keys.GOOGLE_CONSUMER_SECRET !== 'undefined'
- && keys.GOOGLE_CONSUMER_SECRET !== '') {
-   passport.use(new GoogleStrategy({
-     clientID: keys.GOOGLE_CONSUMER_KEY,
-     clientSecret: keys.GOOGLE_CONSUMER_SECRET,
-     callbackURL: 'http://localhost:3000/users/auth/google/callback'
-    },
-    async (token, tokenSecret, profile, done) => {
-      try {
-        done(null, await usersModel.findOrCreate({
-          id: profile.username,  username:profile.username,password: "",
-            provider: profile.provider, familyName: profile.displayName,
-            givenName: "", middleName: "",
-            photos: profile.photos, emails: profile.emails
-          }));
-        } catch (err) { done(err); }
-      }));
-
+  } else if (typeof process.env.GOOGLE_CONSUMER_KEY_FILE !=='undefined'
+  && process.env.GOOGLE_CONSUMER_KEY_FILE !== ''
+  && typeof process.env.GOOGLE_CONSUMER_SECRET_FILE !== 'undefined'
+  && process.env.GOOGLE_CONSUMER_SECRET_FILE !== '') {
+    consumer_key =fs.readFileSync(process.env.GOOGLE_CONSUMER_KEY_FILE, 'utf8');
+    consumer_secret =fs.readFileSync(process.env.GOOGLE_CONSUMER_SECRET_FILE, 'utf8');
     googleLogin = true;
-} else {
-    googleLogin = false;
   }
-  
+
+if (googleLogin) {
+passport.use(new GoogleStrategy({
+consumerKey: consumer_key,
+consumerSecret: consumer_secret,
+callbackURL: 'http://localhost:3000/users/auth/google/callback'},
+async function(token, tokenSecret, profile, done) {
+try {
+      done(null, await usersModel.findOrCreate({
+    id: profile.username, username: profile.username, password:"",
+    provider: profile.provider, familyName: profile.displayName,
+    givenName: "", middleName: "",
+    photos: profile.photos, emails: profile.emails
+    }));
+}   catch(err) { done(err); }
+})  );
+}
   
