@@ -8,7 +8,7 @@
 
 # docker login -u aws -p $(aws ecr get-login-password --region us-east-1) 016182307468.dkr.ecr.us-east-1.amazonaws.com
 
-sudo aws ecr get-login-password --profile notes-app --region us-east-1 | docker login --username AWS --password-stdin 016182307468.dkr.ecr.us-east-1.amazonaws.com
+sudo aws ecr get-login-password --profile notes-app --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_USER.dkr.ecr.$AWS_REGION.amazonaws.com
 
 
 
